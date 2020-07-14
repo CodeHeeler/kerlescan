@@ -109,9 +109,11 @@ def parse_profile(system_profile, display_name, logger):
 
     _parse_running_processes(system_profile.get("running_processes", []))
 
-    if "sap_local_instances" in system_profile:
-        parsed_profile["sap_local_instances"] = ", ".join(
-            system_profile["sap_local_instances"]
+    if "sap" in system_profile:
+        sap = system_profile["sap"]
+        parsed_profile["sap.is_sap_system"] = str(sap.get("is_sap_system", False))
+        parsed_profile["sap.local_instances"] = ", ".join(
+            sap.get("local_instances", [])
         )
 
     # convert bytes to human readable format
