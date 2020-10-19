@@ -5,7 +5,7 @@ from kerlescan.constants import AUTH_HEADER_NAME, INVENTORY_SVC_SYSTEMS_ENDPOINT
 from kerlescan.constants import INVENTORY_SVC_SYSTEM_PROFILES_ENDPOINT
 from kerlescan.constants import INVENTORY_SVC_SYSTEM_TAGS_ENDPOINT
 from kerlescan.constants import SYSTEM_PROFILE_INTEGERS, SYSTEM_PROFILE_STRINGS
-from kerlescan.exceptions import ItemNotReturned
+from kerlescan.exceptions import ItemNotReturned, RBACDenied
 from kerlescan.service_interface import fetch_data
 
 
@@ -101,31 +101,35 @@ def fetch_systems_with_profiles(system_ids, service_auth_key, logger, counters):
         config.inventory_svc_hostname, INVENTORY_SVC_SYSTEM_TAGS_ENDPOINT
     )
 
-    systems_result = fetch_data(
-        system_location,
-        auth_header,
-        system_ids,
-        logger,
-        counters["inventory_service_requests"],
-        counters["inventory_service_exceptions"],
-    )
-    system_profiles_result = fetch_data(
-        system_profile_location,
-        auth_header,
-        system_ids,
-        logger,
-        counters["inventory_service_requests"],
-        counters["inventory_service_exceptions"],
-    )
-    system_tags_result = fetch_data(
-        system_tags_location,
-        auth_header,
-        system_ids,
-        logger,
-        counters["inventory_service_requests"],
-        counters["inventory_service_exceptions"],
-    )
-    ensure_correct_system_count(system_ids, systems_result)
+    try:
+        systems_result = fetch_data(
+            system_location,
+            auth_header,
+            system_ids,
+            logger,
+            counters["inventory_service_requests"],
+            counters["inventory_service_exceptions"],
+        )
+        system_profiles_result = fetch_data(
+            system_profile_location,
+            auth_header,
+            system_ids,
+            logger,
+            counters["inventory_service_requests"],
+            counters["inventory_service_exceptions"],
+        )
+        system_tags_result = fetch_data(
+            system_tags_location,
+            auth_header,
+            system_ids,
+            logger,
+            counters["inventory_service_requests"],
+            counters["inventory_service_exceptions"],
+        )
+        ensure_correct_system_count(system_ids, systems_result)
+
+    except RBACDenied as error:
+        raise HTTPError(HTTPStatus.FORBIDDEN, message=error.message)
 
     return interleave_systems_and_profiles(
         systems_result, system_profiles_result, system_tags_result
